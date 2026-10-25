@@ -2,7 +2,8 @@
 """Converte o IR-DB (github.com/probonopd/irdb) em assets compactos para o app.
 
 Uso: build_db.py <irdb/codes> <app/src/main/assets>
-Gera brands.tsv (marca, nº de modelos) e codes.tsv.gz
+Gera brands.tsv (marca, nº de modelos) e codes.dat (TSV em gzip;
+.gz seria descompactado pelo empacotador do Android)
 (marca, categoria, arquivo, função, protocolo, device, subdevice, function).
 """
 import csv, gzip, io, os, re, sys
@@ -64,7 +65,7 @@ def main(src, dst):
                 if got:
                     rows.extend(got)
                     brands[brand] = brands.get(brand, 0) + 1
-    with gzip.open(os.path.join(dst, "codes.tsv.gz"), "wt", encoding="utf-8", compresslevel=9) as f:
+    with gzip.open(os.path.join(dst, "codes.dat"), "wt", encoding="utf-8", compresslevel=9) as f:
         for r in rows:
             f.write("\t".join(r) + "\n")
     with open(os.path.join(dst, "brands.tsv"), "w", encoding="utf-8") as f:

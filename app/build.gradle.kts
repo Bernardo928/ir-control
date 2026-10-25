@@ -34,7 +34,7 @@ android {
         }
     }
 
-    androidResources { noCompress += "gz" }
+    androidResources { noCompress += "dat" }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

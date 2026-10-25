@@ -41,7 +41,7 @@ object IrDatabase {
     fun models(ctx: Context, brand: String): List<IrModel> {
         val byFile = LinkedHashMap<String, Pair<String, LinkedHashMap<String, IrCode>>>()
         val prefix = "$brand\t"
-        BufferedReader(InputStreamReader(GZIPInputStream(ctx.assets.open("codes.tsv.gz")), Charsets.UTF_8)).use { r ->
+        BufferedReader(InputStreamReader(GZIPInputStream(ctx.assets.open("codes.dat")), Charsets.UTF_8)).use { r ->
             var started = false
             while (true) {
                 val line = r.readLine() ?: break
