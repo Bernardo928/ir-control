@@ -34,9 +34,12 @@ class IrTransmitter(context: Context) {
      * Envia os códigos em sequência (cancela um envio anterior ainda em andamento).
      * [onProgress] recebe (enviados, total); total 0 = nada a enviar.
      */
-    fun send(codes: List<IrCode>, onProgress: (Int, Int) -> Unit, onError: (String) -> Unit) {
+    fun send(codes: List<IrCode>, onProgress: (Int, Int) -> Unit, onError: (String) -> Unit) =
+        sendSignals(codes.mapNotNull { IrEncoder.encode(it) }, onProgress, onError)
+
+    fun sendSignals(all: List<IrSignal>, onProgress: (Int, Int) -> Unit, onError: (String) -> Unit) {
         job?.cancel()
-        val signals = codes.mapNotNull { IrEncoder.encode(it) }.distinctBy { it.key }
+        val signals = all.distinctBy { it.key }
         if (signals.isEmpty()) { onProgress(0, 0); return }
         if (!available) { onError("Este aparelho não tem emissor infravermelho disponível"); return }
         job = scope.launch {

@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SettingsRemote
@@ -50,12 +51,21 @@ fun App(state: AppState) {
                 BackHandler { state.screen = if (state.modelId != null) Screen.REMOTE else Screen.BRANDS }
                 ModelPicker(state)
             }
+            Screen.AC_BRANDS -> {
+                BackHandler { state.screen = Screen.REMOTE }
+                AcBrandPicker(state)
+            }
+            Screen.AC_MODELS -> {
+                BackHandler { state.screen = if (state.acModel != null) Screen.REMOTE else Screen.AC_BRANDS }
+                AcModelPicker(state)
+            }
             Screen.REMOTE -> Column(Modifier.fillMaxSize()) {
                 BackHandler(enabled = state.tab != 0) { state.tab = 0 }
                 Box(Modifier.weight(1f)) {
                     when (state.tab) {
                         0 -> RemoteScreen(state)
                         1 -> ControlScreen(state)
+                        2 -> AcScreen(state)
                         else -> SettingsScreen(state)
                     }
                 }
@@ -70,7 +80,8 @@ private fun BottomBar(state: AppState) {
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
         NavItem(Icons.Rounded.SettingsRemote, "Remote", state.tab == 0) { state.tab = 0 }
         NavItem(Icons.Rounded.GridView, "Control", state.tab == 1) { state.tab = 1 }
-        NavItem(Icons.Rounded.Settings, "Settings", state.tab == 2) { state.tab = 2 }
+        NavItem(Icons.Rounded.AcUnit, "AC", state.tab == 2) { state.tab = 2 }
+        NavItem(Icons.Rounded.Settings, "Settings", state.tab == 3) { state.tab = 3 }
     }
 }
 
@@ -78,7 +89,7 @@ private fun BottomBar(state: AppState) {
 private fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
     val c = if (selected) Palette.Accent else Palette.TextDim
     Column(
-        Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 4.dp),
+        Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(icon, label, tint = c, modifier = Modifier.size(26.dp))
@@ -90,8 +101,12 @@ private fun NavItem(icon: ImageVector, label: String, selected: Boolean, onClick
 private fun SettingsScreen(state: AppState) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Configurações", color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-        SettingCard("Marca", state.brand ?: "—") { state.screen = Screen.BRANDS }
-        SettingCard("Modelo", state.modelLabel) { state.screen = Screen.MODELS }
+        SettingCard("Marca da TV", state.brand ?: "—") { state.screen = Screen.BRANDS }
+        SettingCard("Modelo da TV", state.modelLabel) { state.screen = Screen.MODELS }
+        SettingCard("Marca do ar-condicionado", state.acBrand?.name ?: "—") { state.screen = Screen.AC_BRANDS }
+        SettingCard("Modelo do ar-condicionado", state.acModelLabel) {
+            state.screen = if (state.acBrand != null) Screen.AC_MODELS else Screen.AC_BRANDS
+        }
         SettingCard(
             "Emissor infravermelho",
             if (state.transmitter.available) "Disponível ✓" else "Não encontrado neste aparelho",

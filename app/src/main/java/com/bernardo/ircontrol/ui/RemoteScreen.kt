@@ -51,11 +51,13 @@ import com.bernardo.ircontrol.RemoteKey
 fun RemoteHeader(state: AppState) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
         Row(
-            Modifier.clickable { state.screen = com.bernardo.ircontrol.Screen.MODELS },
+            Modifier.clickable {
+                state.screen = if (state.brand == null) com.bernardo.ircontrol.Screen.BRANDS else com.bernardo.ircontrol.Screen.MODELS
+            },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(state.brand ?: "", color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                Text(state.brand ?: "Escolher marca da TV", color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                 Text(state.modelLabel, color = Palette.TextDim, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Icon(Icons.Rounded.ExpandMore, contentDescription = "Trocar modelo", tint = Palette.TextDim)

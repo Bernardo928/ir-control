@@ -50,7 +50,7 @@ private val POPULAR = listOf(
 )
 
 @Composable
-private fun TopBar(title: String, onBack: (() -> Unit)?) {
+internal fun TopBar(title: String, onBack: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Voltar", tint = Palette.Text) }
         else Spacer(Modifier.size(12.dp))
@@ -77,6 +77,12 @@ fun BrandPicker(state: AppState) {
             val pop = all.filter { b -> POPULAR.any { it.equals(b.name, true) } }
                 .sortedBy { b -> POPULAR.indexOfFirst { it.equals(b.name, true) } }
             pop + (all - pop.toSet())
+        }
+        if (state.brand == null) {
+            ListCard(onClick = { state.tab = 2; state.screen = Screen.REMOTE }, selected = false,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+                Text("❄  Só quero controlar o ar-condicionado", color = Palette.Text, fontSize = 15.sp)
+            }
         }
         if (state.brands.isEmpty()) Loading()
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -130,9 +136,14 @@ fun ModelPicker(state: AppState) {
 }
 
 @Composable
-private fun ListCard(onClick: () -> Unit, selected: Boolean, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+internal fun ListCard(
+    onClick: () -> Unit,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) {
     Row(
-        Modifier.fillMaxWidth()
+        modifier.fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) Palette.ButtonPressed else Palette.Button, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
@@ -143,6 +154,6 @@ private fun ListCard(onClick: () -> Unit, selected: Boolean, content: @Composabl
 }
 
 @Composable
-private fun Loading() {
+internal fun Loading() {
     Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
