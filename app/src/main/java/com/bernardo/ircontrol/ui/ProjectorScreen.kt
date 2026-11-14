@@ -26,6 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -104,9 +108,12 @@ fun ProjectorScreen(state: AppState) {
 fun ProjBrandPicker(state: AppState) {
     Column(Modifier.fillMaxSize()) {
         TopBar("Marca do projetor", { state.screen = Screen.REMOTE })
+        var query by rememberSaveable { mutableStateOf("") }
+        BrandSearchField(query) { query = it }
         if (state.projBrands.isEmpty()) Loading()
+        val list = state.projBrands.filter { matchesQuery(it.name, query) }
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.projBrands, key = { it.name }) { b ->
+            items(list, key = { it.name }) { b ->
                 ListCard(onClick = { state.selectProjBrand(b.name) }, selected = b.name == state.projBrand) {
                     Text(b.name, color = Palette.Text, fontSize = 17.sp, modifier = Modifier.weight(1f))
                     Text("${b.models} controles", color = Palette.TextDim, fontSize = 13.sp)

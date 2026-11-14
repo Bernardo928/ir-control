@@ -34,6 +34,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -196,8 +200,11 @@ private fun Chip(label: String, selected: Boolean, modifier: Modifier, icon: Boo
 fun AcBrandPicker(state: AppState) {
     Column(Modifier.fillMaxSize()) {
         TopBar("Marca do ar-condicionado", { state.screen = Screen.REMOTE })
+        var query by rememberSaveable { mutableStateOf("") }
+        BrandSearchField(query) { query = it }
+        val list = com.bernardo.ircontrol.AcBrands.all.filter { matchesQuery(it.name, query) }
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(com.bernardo.ircontrol.AcBrands.all, key = { it.name }) { b ->
+            items(list, key = { it.name }) { b ->
                 ListCard(onClick = { state.selectAcBrand(b) }, selected = b == state.acBrand) {
                     Text(b.name, color = Palette.Text, fontSize = 17.sp, modifier = Modifier.weight(1f))
                     Text(b.protocols.joinToString(" / ") { it.title.substringBefore(" (") }, color = Palette.TextDim, fontSize = 12.sp)

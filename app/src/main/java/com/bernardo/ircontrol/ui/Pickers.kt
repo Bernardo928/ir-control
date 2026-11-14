@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Search
@@ -58,22 +59,37 @@ internal fun TopBar(title: String, onBack: (() -> Unit)?) {
     }
 }
 
+private fun fold(s: String) =
+    java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
+
+/** Busca de marca sem diferenciar maiúsculas nem acentos ("britania" acha "Britânia"). */
+internal fun matchesQuery(name: String, query: String) = query.isBlank() || fold(name).contains(fold(query.trim()))
+
+/** Campo "Buscar marca…" usado nas listas de marcas da TV, do projetor e do AC. */
+@Composable
+internal fun BrandSearchField(query: String, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query, onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        placeholder = { Text("Buscar marca…") },
+        leadingIcon = { Icon(Icons.Rounded.Search, null) },
+        trailingIcon = if (query.isNotEmpty()) ({
+            IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, "Limpar busca") }
+        }) else null,
+        singleLine = true, shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Palette.Outline, focusedBorderColor = Palette.Accent),
+    )
+}
+
 @Composable
 fun BrandPicker(state: AppState) {
     var query by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
         TopBar("Escolha a marca da TV", if (state.brand != null) ({ state.screen = Screen.REMOTE }) else null)
-        OutlinedTextField(
-            value = query, onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            placeholder = { Text("Buscar marca…") },
-            leadingIcon = { Icon(Icons.Rounded.Search, null) },
-            singleLine = true, shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Palette.Outline, focusedBorderColor = Palette.Accent),
-        )
+        BrandSearchField(query) { query = it }
         val q = query.trim()
         val list = remember(state.brands, q) {
-            val all = state.brands.filter { q.isEmpty() || it.name.contains(q, ignoreCase = true) }
+            val all = state.brands.filter { matchesQuery(it.name, q) }
             val pop = all.filter { b -> POPULAR.any { it.equals(b.name, true) } }
                 .sortedBy { b -> POPULAR.indexOfFirst { it.equals(b.name, true) } }
             pop + (all - pop.toSet())
