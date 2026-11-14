@@ -18,9 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AcUnit
-import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SettingsRemote
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,12 +59,20 @@ fun App(state: AppState) {
                 BackHandler { state.screen = if (state.acModel != null) Screen.REMOTE else Screen.AC_BRANDS }
                 AcModelPicker(state)
             }
+            Screen.PROJ_BRANDS -> {
+                BackHandler { state.screen = Screen.REMOTE }
+                ProjBrandPicker(state)
+            }
+            Screen.PROJ_MODELS -> {
+                BackHandler { if (state.projModelId != null) state.screen = Screen.REMOTE else state.openProjBrands() }
+                ProjModelPicker(state)
+            }
             Screen.REMOTE -> Column(Modifier.fillMaxSize()) {
                 BackHandler(enabled = state.tab != 0) { state.tab = 0 }
                 Box(Modifier.weight(1f)) {
                     when (state.tab) {
                         0 -> RemoteScreen(state)
-                        1 -> ControlScreen(state)
+                        1 -> ProjectorScreen(state)
                         2 -> AcScreen(state)
                         else -> SettingsScreen(state)
                     }
@@ -79,7 +87,7 @@ fun App(state: AppState) {
 private fun BottomBar(state: AppState) {
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
         NavItem(Icons.Rounded.SettingsRemote, "Remote", state.tab == 0) { state.tab = 0 }
-        NavItem(Icons.Rounded.GridView, "Control", state.tab == 1) { state.tab = 1 }
+        NavItem(Icons.Rounded.Videocam, "Projetor", state.tab == 1) { state.tab = 1 }
         NavItem(Icons.Rounded.AcUnit, "AC", state.tab == 2) { state.tab = 2 }
         NavItem(Icons.Rounded.Settings, "Settings", state.tab == 3) { state.tab = 3 }
     }
@@ -103,6 +111,10 @@ private fun SettingsScreen(state: AppState) {
         Text("Configurações", color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         SettingCard("Marca da TV", state.brand ?: "—") { state.screen = Screen.BRANDS }
         SettingCard("Modelo da TV", state.modelLabel) { state.screen = Screen.MODELS }
+        SettingCard("Marca do projetor", state.projBrand ?: "—") { state.openProjBrands() }
+        SettingCard("Modelo do projetor", state.projModelLabel) {
+            if (state.projBrand != null) state.screen = Screen.PROJ_MODELS else state.openProjBrands()
+        }
         SettingCard("Marca do ar-condicionado", state.acBrand?.name ?: "—") { state.screen = Screen.AC_BRANDS }
         SettingCard("Modelo do ar-condicionado", state.acModelLabel) {
             state.screen = if (state.acBrand != null) Screen.AC_MODELS else Screen.AC_BRANDS

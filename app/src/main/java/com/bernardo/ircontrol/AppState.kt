@@ -10,7 +10,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Screen { BRANDS, MODELS, REMOTE, AC_BRANDS, AC_MODELS }
+enum class Screen { BRANDS, MODELS, REMOTE, AC_BRANDS, AC_MODELS, PROJ_BRANDS, PROJ_MODELS }
 
 class AppState(private val context: Context) {
     private val prefs = context.getSharedPreferences("remote", Context.MODE_PRIVATE)
@@ -22,19 +22,74 @@ class AppState(private val context: Context) {
     var models by mutableStateOf<List<IrModel>>(emptyList()); private set
     var modelId by mutableStateOf<String?>(prefs.getString("model", null)); private set
     var loading by mutableStateOf(false); private set
-    /** Quem só usa o AC (sem TV escolhida) abre direto na aba AC. */
-    private val acOnly = brand == null && prefs.getString("ac_brand", null) != null
+    /** Quem não usa TV abre direto na aba do aparelho que já configurou (AC ou projetor). */
+    private val firstTab = when {
+        brand != null -> 0
+        prefs.getString("proj_brand", null) != null -> 1
+        prefs.getString("ac_brand", null) != null -> 2
+        else -> 0
+    }
     var screen by mutableStateOf(
         when {
-            acOnly -> Screen.REMOTE
+            firstTab != 0 -> Screen.REMOTE
             brand == null -> Screen.BRANDS
             modelId == null -> Screen.MODELS
             else -> Screen.REMOTE
         }
     )
-    var tab by mutableStateOf(if (acOnly) 2 else 0)
+    var tab by mutableStateOf(firstTab)
     var status by mutableStateOf<String?>(null); private set
     var sendingLabel by mutableStateOf<String?>(null); private set
+
+    // ---------- Projetor ----------
+    var projBrands by mutableStateOf<List<Brand>>(emptyList()); private set
+    var projBrand by mutableStateOf(prefs.getString("proj_brand", null)); private set
+    var projModels by mutableStateOf<List<IrModel>>(emptyList()); private set
+    /** Id do controle escolhido, ou [ALL] para "Não sei o modelo". */
+    var projModelId by mutableStateOf(prefs.getString("proj_model", null)); private set
+    var projLoading by mutableStateOf(false); private set
+
+    val projModel: IrModel? get() = projModels.firstOrNull { it.id == projModelId }
+
+    val projModelLabel: String
+        get() = when {
+            projModelId == ALL -> "Todos os códigos (${projModels.size} controles)"
+            projModel != null -> projModel!!.title + " · " + projModel!!.file
+            else -> "Nenhum modelo"
+        }
+
+    private suspend fun loadProjModels(b: String) {
+        projLoading = true
+        projModels = emptyList()
+        projModels = withContext(Dispatchers.IO) { IrDatabase.models(context, b).filter { it.isProjector } }
+        projLoading = false
+    }
+
+    fun openProjBrands() {
+        screen = Screen.PROJ_BRANDS
+        if (projBrands.isEmpty()) scope.launch { projBrands = withContext(Dispatchers.IO) { IrDatabase.projectorBrands(context) } }
+    }
+
+    fun selectProjBrand(b: String) {
+        if (b != projBrand) {
+            projBrand = b
+            projModelId = null
+            prefs.edit().putString("proj_brand", b).remove("proj_model").apply()
+            scope.launch { loadProjModels(b) }
+        }
+        screen = Screen.PROJ_MODELS
+    }
+
+    fun selectProjModel(id: String) {
+        projModelId = id
+        prefs.edit().putString("proj_model", id).apply()
+        screen = Screen.REMOTE
+        tab = 1
+    }
+
+    fun pressProj(key: RemoteKey) = send(
+        if (projModelId == ALL) projModels.mapNotNull { it.code(key) } else listOfNotNull(projModel?.code(key))
+    )
 
     // ---------- Ar-condicionado ----------
     var acBrand by mutableStateOf(AcBrands.find(prefs.getString("ac_brand", null))); private set
@@ -122,6 +177,7 @@ class AppState(private val context: Context) {
         scope.launch {
             brands = withContext(Dispatchers.IO) { IrDatabase.brands(context) }
             brand?.let { loadModels(it) }
+            projBrand?.let { loadProjModels(it) }
         }
     }
 

@@ -83,6 +83,10 @@ fun BrandPicker(state: AppState) {
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
                 Text("❄  Só quero controlar o ar-condicionado", color = Palette.Text, fontSize = 15.sp)
             }
+            ListCard(onClick = { state.tab = 1; state.openProjBrands() }, selected = false,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+                Text("📽  Só quero controlar o projetor", color = Palette.Text, fontSize = 15.sp)
+            }
         }
         if (state.brands.isEmpty()) Loading()
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

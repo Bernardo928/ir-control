@@ -50,5 +50,10 @@ class IrEncoderTest {
         assertEquals("CHANNELMINUS", RemoteKey.normalizeName("CHANNEL -"))
         assertEquals("CHMINUS", RemoteKey.normalizeName("CH-"))
         assertEquals("AB", RemoteKey.normalizeName("A-B"))
+        assertEquals("ZOOMMINUS", RemoteKey.normalizeName("ZOOM -"))
+        val fns = mapOf("STANDBYON" to 1, "ZOOMPLUS" to 2)
+        assertEquals(1, RemoteKey.pick(RemoteKey.POWER, fns))
+        assertEquals(1, RemoteKey.pick(RemoteKey.POWER_OFF, fns))
+        assertEquals(2, RemoteKey.pick(RemoteKey.ZOOM_IN, fns))
     }
 }

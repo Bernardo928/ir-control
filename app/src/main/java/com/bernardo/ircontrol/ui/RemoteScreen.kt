@@ -23,10 +23,6 @@ import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.FastForward
-import androidx.compose.material.icons.rounded.FastRewind
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PowerSettingsNew
@@ -48,17 +44,18 @@ import com.bernardo.ircontrol.AppState
 import com.bernardo.ircontrol.RemoteKey
 
 @Composable
-fun RemoteHeader(state: AppState) {
+fun RemoteHeader(state: AppState) = DeviceHeader(
+    state, state.brand ?: "Escolher marca da TV", state.modelLabel,
+) { state.screen = if (state.brand == null) com.bernardo.ircontrol.Screen.BRANDS else com.bernardo.ircontrol.Screen.MODELS }
+
+/** Cabeçalho com marca/modelo (toque para trocar) e linha de status do envio. */
+@Composable
+fun DeviceHeader(state: AppState, title: String, subtitle: String, onClick: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
-        Row(
-            Modifier.clickable {
-                state.screen = if (state.brand == null) com.bernardo.ircontrol.Screen.BRANDS else com.bernardo.ircontrol.Screen.MODELS
-            },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(Modifier.clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(state.brand ?: "Escolher marca da TV", color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                Text(state.modelLabel, color = Palette.TextDim, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, color = Palette.Text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = Palette.TextDim, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Icon(Icons.Rounded.ExpandMore, contentDescription = "Trocar modelo", tint = Palette.TextDim)
         }
@@ -91,7 +88,7 @@ fun RemoteScreen(state: AppState) {
         }
 
         Spacer(Modifier.height(22.dp))
-        DPad(state)
+        DPad(p, RemoteKey.TOOLS to "TOOLS", RemoteKey.INFO to "INFO")
         Spacer(Modifier.height(26.dp))
 
         // VOL, MENU / Mudo / Entrada, CH
@@ -113,8 +110,7 @@ fun RemoteScreen(state: AppState) {
 }
 
 @Composable
-private fun DPad(state: AppState) {
-    val p = state::press
+internal fun DPad(p: (RemoteKey) -> Unit, topLeft: Pair<RemoteKey, String>, topRight: Pair<RemoteKey, String>) {
     Box(Modifier.width(320.dp).height(300.dp), contentAlignment = Alignment.Center) {
         // Contorno em cruz com gradiente
         Canvas(Modifier.size(262.dp)) {
@@ -136,55 +132,9 @@ private fun DPad(state: AppState) {
         }
 
         val corner = Modifier.size(68.dp)
-        RemoteButton({ p(RemoteKey.TOOLS) }, corner.offset((-124).dp, (-112).dp), corner = 32.dp) { KeyLabel("TOOLS", size = 13) }
-        RemoteButton({ p(RemoteKey.INFO) }, corner.offset(124.dp, (-112).dp), corner = 32.dp) { KeyLabel("INFO", size = 13) }
+        RemoteButton({ p(topLeft.first) }, corner.offset((-124).dp, (-112).dp), corner = 32.dp) { KeyLabel(topLeft.second, size = 13) }
+        RemoteButton({ p(topRight.first) }, corner.offset(124.dp, (-112).dp), corner = 32.dp) { KeyLabel(topRight.second, size = 13) }
         RemoteButton({ p(RemoteKey.BACK) }, corner.offset((-124).dp, 112.dp), corner = 32.dp) { KeyLabel("Voltar", Icons.Filled.Undo, size = 14) }
         RemoteButton({ p(RemoteKey.EXIT) }, corner.offset(124.dp, 112.dp), corner = 32.dp) { KeyLabel("EXIT", size = 13) }
-    }
-}
-
-/** Aba "Control": teclado numérico, mídia e teclas coloridas. */
-@Composable
-fun ControlScreen(state: AppState) {
-    val p = state::press
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        RemoteHeader(state)
-        val k = Modifier.width(88.dp).height(62.dp)
-        RemoteKey.digits.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 14.dp)) {
-                if (row.size == 1) Spacer(Modifier.width(88.dp))
-                row.forEach { key -> RemoteButton({ p(key) }, k, corner = 24.dp) { KeyLabel(key.aliases[0], size = 24) } }
-                if (row.size == 1) Spacer(Modifier.width(88.dp))
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val m = Modifier.size(54.dp)
-            RemoteButton({ p(RemoteKey.REWIND) }, m, corner = 20.dp) { KeyLabel("Voltar", Icons.Rounded.FastRewind) }
-            RemoteButton({ p(RemoteKey.PLAY) }, m, corner = 20.dp) { KeyLabel("Play", Icons.Rounded.PlayArrow) }
-            RemoteButton({ p(RemoteKey.PAUSE) }, m, corner = 20.dp) { KeyLabel("Pause", Icons.Rounded.Pause) }
-            RemoteButton({ p(RemoteKey.STOP) }, m, corner = 20.dp) { KeyLabel("Stop", Icons.Rounded.Stop) }
-            RemoteButton({ p(RemoteKey.FORWARD) }, m, corner = 20.dp) { KeyLabel("Avançar", Icons.Rounded.FastForward) }
-        }
-        Spacer(Modifier.height(18.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(
-                RemoteKey.RED to Palette.Red, RemoteKey.GREEN to androidx.compose.ui.graphics.Color(0xFF3DBE5B),
-                RemoteKey.YELLOW to androidx.compose.ui.graphics.Color(0xFFF2C230), RemoteKey.BLUE to Palette.Blue,
-            ).forEach { (key, color) ->
-                RemoteButton({ p(key) }, Modifier.width(66.dp).height(30.dp), corner = 15.dp,
-                    background = androidx.compose.ui.graphics.SolidColor(color.copy(alpha = 0.85f))) {}
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val m = Modifier.width(96.dp).height(46.dp)
-            RemoteButton({ p(RemoteKey.RECORD) }, m, corner = 16.dp, outlined = true) { KeyLabel("REC", size = 13) }
-            RemoteButton({ p(RemoteKey.SUBTITLE) }, m, corner = 16.dp, outlined = true) { KeyLabel("LEGENDA", size = 13) }
-            RemoteButton({ p(RemoteKey.SLEEP) }, m, corner = 16.dp, outlined = true) { KeyLabel("SLEEP", size = 13) }
-        }
     }
 }

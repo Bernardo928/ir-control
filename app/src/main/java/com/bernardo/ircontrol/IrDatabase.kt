@@ -17,10 +17,12 @@ class IrModel(val brand: String, val category: String, val file: String, val fun
             RemoteKey.pick(RemoteKey.POWER, functions) != null &&
             (RemoteKey.pick(RemoteKey.VOL_UP, functions) != null || RemoteKey.pick(RemoteKey.CH_UP, functions) != null)
     val isTvCategory: Boolean get() = TV.containsMatchIn(category)
+    val isProjector: Boolean get() = PROJECTOR.containsMatchIn(category)
 
     fun code(key: RemoteKey): IrCode? = RemoteKey.pick(key, functions)
 
     companion object {
+        val PROJECTOR = Regex("(?i)proj|beamer")
         private val TV = Regex("(?i)\\b(tv|hdtv|lcd|led|plasma|television|monitor)\\b|tv")
         private val NOT_TV = Regex(
             "(?i)air|cond|\\bac\\b|dvd|blu|\\bcd|vcr|vhs|receiver|amp|sound|audio|hifi|hi-fi|speaker|radio|tuner|" +
@@ -36,6 +38,21 @@ object IrDatabase {
     fun brands(ctx: Context): List<Brand> = brandsCache ?: ctx.assets.open("brands.tsv").bufferedReader().useLines { lines ->
         lines.mapNotNull { l -> l.split('\t').takeIf { it.size == 2 }?.let { Brand(it[0], it[1].toInt()) } }.toList()
     }.also { brandsCache = it }
+
+    private var projectorBrandsCache: List<Brand>? = null
+
+    /** Marcas que têm ao menos um controle de projetor no IR-DB. */
+    fun projectorBrands(ctx: Context): List<Brand> = projectorBrandsCache ?: run {
+        val files = LinkedHashMap<String, MutableSet<String>>()
+        BufferedReader(InputStreamReader(GZIPInputStream(ctx.assets.open("codes.dat")), Charsets.UTF_8)).use { r ->
+            while (true) {
+                val p = (r.readLine() ?: break).split('\t')
+                if (p.size == 8 && IrModel.PROJECTOR.containsMatchIn(p[1]))
+                    files.getOrPut(p[0]) { HashSet() }.add(p[1] + "/" + p[2])
+            }
+        }
+        files.map { (b, f) -> Brand(b, f.size) }
+    }.also { projectorBrandsCache = it }
 
     /** Lê todos os controles da marca (TVs primeiro). */
     fun models(ctx: Context, brand: String): List<IrModel> {
